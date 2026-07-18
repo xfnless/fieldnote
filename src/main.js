@@ -137,7 +137,9 @@ const createNewNote = async () => {
   try {
     setStatus("Creating note...");
     const title = state.query.val.trim() || "Untitled";
-    const note = await createNote(title, "");
+    const note = await createNote(title, "", {
+      items: Object.values(state.manifest.val.items),
+    });
 
     const file = await storage.putText(note.meta.path, note.content, {
       message: `Create ${note.meta.title}`,

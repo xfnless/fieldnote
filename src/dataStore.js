@@ -28,6 +28,18 @@ const encoder = new TextEncoder();
 const bytesToHex = bytes =>
   Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
 
+const pad2 = value => String(value).padStart(2, "0");
+
+const timePrefix = (date = new Date()) => {
+  const year = pad2(date.getFullYear() % 100);
+  const month = (date.getMonth() + 1).toString(36);
+  const day = date.getDate().toString(36);
+  const hour = date.getHours().toString(36);
+  const minute = pad2(date.getMinutes());
+
+  return `${year}${month}${day}${hour}${minute}`;
+};
+
 export const createEmptyManifest = () => ({
   schema: 1,
   items: {},
@@ -46,10 +58,25 @@ export const sha256Hex = async text => {
 
 export const textSize = text => encoder.encode(text).byteLength;
 
+export const createNoteId = (items = [], date = new Date()) => {
+  const prefix = timePrefix(date);
+  const ids = new Set(items.map(item => item.id));
+  let sequence = 0;
+
+  while (sequence < 36 * 36) {
+    const id = `${prefix}${pad2(sequence.toString(36))}`;
+    if (!ids.has(id)) return id;
+    sequence += 1;
+  }
+
+  throw new Error(`Too many notes created in one minute: ${prefix}`);
+};
+
 export const createNote = async (title, content, deps = {}) => {
   const now = deps.now ?? (() => new Date().toISOString());
-  const id = deps.id ?? (() => `n_${crypto.randomUUID().replaceAll("-", "")}`);
   const createdAt = now();
+  const existingItems = deps.items ?? [];
+  const id = deps.id ?? (() => createNoteId(existingItems, new Date(createdAt)));
   const noteId = id();
   const path = `notes/${noteId}.md`;
 

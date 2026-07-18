@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   createEmptyManifest,
   createNote,
+  createNoteId,
   isTextPath,
   mergeManifestAndContents,
 } from "../src/dataStore.js";
@@ -19,6 +20,13 @@ test("isTextPath accepts lightweight text and script files", () => {
   assert.equal(isTextPath("notes/a.md"), true);
   assert.equal(isTextPath("notes/a.sh"), true);
   assert.equal(isTextPath("files/a.png"), false);
+});
+
+test("createNoteId uses the short Garden-style timestamp id", () => {
+  const date = new Date(2026, 6, 18, 10, 0, 0);
+
+  assert.equal(createNoteId([], date), "267ia0000");
+  assert.equal(createNoteId([{ id: "267ia0000" }], date), "267ia0001");
 });
 
 test("createNote builds a stable metadata record and content write", async () => {
