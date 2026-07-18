@@ -11,8 +11,6 @@ const {
   button,
   div,
   form,
-  h1,
-  header,
   input,
   label,
   li,
@@ -320,6 +318,7 @@ const ConnectView = () => form(
   label("Root path"),
   input({ name: "root", placeholder: "optional, e.g. fieldnote" }),
   button({ disabled: state.connecting }, () => state.connecting.val ? "Connecting..." : "Connect"),
+  p({ class: "status" }, state.status),
 );
 
 const Sidebar = () => section(
@@ -385,14 +384,6 @@ const Editor = () => {
 
 const App = () => main(
   { class: "shell" },
-  header(
-    { class: "topbar" },
-    div(
-      h1("Fieldnote"),
-      p("Credentials stay in memory. Text stays in your GitHub data repo."),
-    ),
-    span({ class: "status" }, state.status),
-  ),
   () => state.connected.val
     ? div({ class: "workspace" }, Sidebar(), Editor())
     : ConnectView(),
