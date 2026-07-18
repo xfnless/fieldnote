@@ -38,6 +38,7 @@ const state = {
 };
 
 let storage = null;
+let editorTextArea = null;
 
 const sortedItems = () =>
   Object.values(state.items.val)
@@ -56,6 +57,16 @@ const selectedItem = () => state.items.val[state.selectedId.val] || null;
 
 const setStatus = message => {
   state.status.val = message;
+};
+
+const syncEditorText = () => {
+  if (!editorTextArea) return;
+  editorTextArea.value = selectedItem()?.content ?? "";
+};
+
+const selectItem = id => {
+  state.selectedId.val = id;
+  queueMicrotask(syncEditorText);
 };
 
 const loadManifest = async () => {
@@ -84,7 +95,7 @@ const loadItems = async () => {
   }
 
   state.items.val = mergeManifestAndContents(state.manifest.val, contents);
-  state.selectedId.val = sortedItems()[0]?.id ?? "";
+  selectItem(sortedItems()[0]?.id ?? "");
 };
 
 const connect = async event => {
@@ -135,41 +146,24 @@ const createNewNote = async () => {
   if (!storage) return;
 
   try {
-    setStatus("Creating note...");
     const title = state.query.val.trim() || "Untitled";
     const note = await createNote(title, "", {
-      items: Object.values(state.manifest.val.items),
+      items: Object.values(state.items.val),
     });
-
-    const file = await storage.putText(note.meta.path, note.content, {
-      message: `Create ${note.meta.title}`,
-    });
-
-    state.manifest.val = {
-      ...state.manifest.val,
-      items: {
-        ...state.manifest.val.items,
-        [note.meta.id]: {
-          ...note.meta,
-          fileSha: file.sha,
-        },
-      },
-    };
-    await saveManifest(`Add ${note.meta.title}`);
 
     state.items.val = {
       ...state.items.val,
       [note.meta.id]: {
         ...note.meta,
-        fileSha: file.sha,
+        fileSha: "",
         content: "",
-        dirty: false,
+        dirty: true,
         saving: false,
         error: "",
       },
     };
-    state.selectedId.val = note.meta.id;
-    setStatus("Created");
+    selectItem(note.meta.id);
+    setStatus("New note in memory");
   } catch (error) {
     setStatus(error.message);
   }
@@ -211,8 +205,16 @@ const saveSelected = async () => {
       message: `Update ${item.title}`,
     });
 
+    const baseMeta = state.manifest.val.items[item.id] ?? {
+      id: item.id,
+      path: item.path,
+      title: item.title,
+      kind: item.kind,
+      createdAt: item.createdAt,
+      deleted: false,
+    };
     const nextMeta = {
-      ...state.manifest.val.items[item.id],
+      ...baseMeta,
       updatedAt: nextNote.meta.updatedAt,
       size: nextNote.meta.size,
       hash: nextNote.meta.hash,
@@ -257,6 +259,15 @@ const softDeleteSelected = async () => {
   if (!confirm(`Delete "${item.title}"?`)) return;
 
   try {
+    if (!state.manifest.val.items[item.id]) {
+      const nextItems = { ...state.items.val };
+      delete nextItems[item.id];
+      state.items.val = nextItems;
+      selectItem(sortedItems()[0]?.id ?? "");
+      setStatus("Discarded");
+      return;
+    }
+
     const deletedAt = new Date().toISOString();
     const nextMeta = {
       ...state.manifest.val.items[item.id],
@@ -277,7 +288,7 @@ const softDeleteSelected = async () => {
     const nextItems = { ...state.items.val };
     delete nextItems[item.id];
     state.items.val = nextItems;
-    state.selectedId.val = sortedItems()[0]?.id ?? "";
+    selectItem(sortedItems()[0]?.id ?? "");
     setStatus("Deleted");
   } catch (error) {
     setStatus(error.message);
@@ -315,7 +326,6 @@ const Sidebar = () => section(
   input({
     class: "search",
     placeholder: "Search or new note title",
-    value: state.query,
     oninput: event => {
       state.query.val = event.target.value;
     },
@@ -327,7 +337,7 @@ const Sidebar = () => section(
       {
         class: () => item.id === state.selectedId.val ? "note selected" : "note",
         onclick: () => {
-          state.selectedId.val = item.id;
+          selectItem(item.id);
         },
       },
       span({ class: "note-title" }, item.title),
@@ -336,33 +346,41 @@ const Sidebar = () => section(
   ),
 );
 
-const Editor = () => section(
-  { class: "editor" },
-  () => {
-    const item = selectedItem();
-    if (!item) {
-      return div({ class: "empty" }, "Create a note to begin.");
-    }
+const Editor = () => {
+  editorTextArea = textarea({
+    class: "note-editor",
+    value: selectedItem()?.content ?? "",
+    spellcheck: "false",
+    oninput: event => updateSelectedContent(event.target.value),
+  });
 
-    return div(
+  return section(
+    { class: "editor" },
+    div(
       { class: "editor-inner" },
       div(
         { class: "editor-bar" },
-        span(item.title),
-        span({ class: "save-state" }, item.saving ? "saving" : item.dirty ? "dirty" : "saved"),
+        span(() => selectedItem()?.title ?? "No note"),
+        span(
+          { class: "save-state" },
+          () => {
+            const item = selectedItem();
+            if (!item) return "idle";
+            return item.saving ? "saving" : item.dirty ? "dirty" : "saved";
+          },
+        ),
         button({ onclick: saveSelected }, "Save"),
         button({ class: "danger", onclick: softDeleteSelected }, "Delete"),
       ),
-      textarea({
-        class: "note-editor",
-        value: item.content,
-        spellcheck: "false",
-        oninput: event => updateSelectedContent(event.target.value),
-      }),
-      item.error ? p({ class: "error" }, item.error) : "",
-    );
-  },
-);
+      editorTextArea,
+      () => selectedItem()
+        ? selectedItem().error
+          ? p({ class: "error" }, selectedItem().error)
+          : ""
+        : div({ class: "empty" }, "Create a note to begin."),
+    ),
+  );
+};
 
 const App = () => main(
   { class: "shell" },
