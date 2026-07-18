@@ -4,40 +4,68 @@
 
 body {
   margin: 0;
-  background: #f7f4ef;
-  color: #24211d;
+  background: #f4f2ee;
+  color: #25221d;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
+button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #cfc7ba;
+  border-radius: 6px;
+  background: #fffdf8;
+  color: #25221d;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .shell {
-  width: min(100% - 32px, 760px);
-  margin: 48px auto;
+  width: min(100% - 28px, 1120px);
+  margin: 24px auto;
 }
 
-.brand {
-  margin-bottom: 28px;
+.topbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ded7cc;
+  padding-bottom: 16px;
 }
 
-.brand h1 {
-  margin: 0 0 8px;
-  font-size: 40px;
+.topbar h1 {
+  margin: 0 0 5px;
+  font-size: 34px;
   font-weight: 650;
 }
 
-.brand p {
+.topbar p {
   margin: 0;
-  color: #6f675d;
+  color: #756d62;
+}
+
+.status {
+  color: #5f6f67;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .connect {
   display: grid;
   gap: 10px;
-  max-width: 420px;
+  max-width: 430px;
 }
 
 .connect label {
@@ -45,21 +73,147 @@ input {
   font-size: 14px;
 }
 
-.connect input {
-  min-height: 40px;
-  padding: 8px 10px;
-  border: 1px solid #d4ccc0;
+.connect input,
+.search,
+.note-editor {
+  border: 1px solid #d3cabd;
   border-radius: 6px;
   background: #fffdf9;
   color: inherit;
 }
 
-.connect button {
+.connect input,
+.search {
   min-height: 40px;
-  margin-top: 6px;
-  border: 1px solid #2f6f5e;
-  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.connect button,
+.new-note,
+.editor-bar button:first-of-type {
+  border-color: #2f6f5e;
   background: #2f6f5e;
   color: #fff;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 18px;
+  min-height: calc(100vh - 132px);
+}
+
+.sidebar,
+.editor {
+  min-width: 0;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+}
+
+.note {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   cursor: pointer;
+}
+
+.note:hover,
+.note.selected {
+  border-color: #d3cabd;
+  background: #fffdf9;
+}
+
+.note-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-meta {
+  color: #7b7368;
+  font-size: 12px;
+}
+
+.editor-inner {
+  display: grid;
+  grid-template-rows: auto minmax(360px, 1fr) auto;
+  gap: 10px;
+  height: 100%;
+}
+
+.editor-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-bar > span:first-child {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.save-state {
+  color: #746d63;
+  font-size: 13px;
+}
+
+.danger {
+  color: #8a2e25;
+}
+
+.note-editor {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  padding: 14px;
+  resize: none;
+  line-height: 1.55;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15px;
+}
+
+.empty {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  border: 1px dashed #d3cabd;
+  border-radius: 8px;
+  color: #746d63;
+}
+
+.error {
+  margin: 0;
+  color: #8a2e25;
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
 }
