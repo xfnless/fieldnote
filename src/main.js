@@ -121,6 +121,7 @@ const connect = async event => {
     await loadManifest();
     await loadItems();
     state.connected.val = true;
+    queueMicrotask(syncEditorText);
     setStatus("Connected");
   } catch (error) {
     state.connected.val = false;
@@ -349,7 +350,7 @@ const Sidebar = () => section(
 const Editor = () => {
   editorTextArea = textarea({
     class: "note-editor",
-    value: selectedItem()?.content ?? "",
+    value: "",
     spellcheck: "false",
     oninput: event => updateSelectedContent(event.target.value),
   });
